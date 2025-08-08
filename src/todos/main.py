@@ -121,8 +121,8 @@ class DataStudent(BaseModel):
 # the type is single so it is consider as query | body when we use a Base Model of pydantic so api understand it is body ex: [data:DataStudent]
 
 @app.post("/student/{id}/assigments/{assigment_id}")  # path parameters
-def student_assigments(id,assigment_id:AssignmentId, data:DataStudent, this_is_query:int):
-    print("body: ",data)
+def student_assigments(id,assigment_id:AssignmentId, thisisbody:DataStudent, this_is_query:int):
+    print("body: ",thisisbody)
     print("query data", this_is_query)
     if assigment_id is AssignmentId.three:
         return {"message": f"std id: {id} This is the third assigment"}
