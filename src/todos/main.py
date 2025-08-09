@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Body, Query,Path
 import uvicorn
-from typing import Optional, Annotated
-from pydantic import BaseModel,StrictInt
+from typing import Optional, Annotated,Union
+from pydantic import BaseModel,StrictInt,Field
 from enum import Enum
 
 
@@ -100,37 +100,128 @@ app = FastAPI()
 #     return {"username": username, "age": age}
 
 
-
+# ================================================================# path , query , body demo all included in below ==========================================================================================
 
 # we can define enums for paths and then we can only pass from those enums only not other data
-class AssignmentId(int,Enum):
-    one = 1
-    two = 2
-    three = 3
+# class AssignmentId(int,Enum):
+#     one = 1
+#     two = 2
+#     three = 3
 
-# body parameters it means to send json data from frontend
-class DataStudent(BaseModel):
-    username:str
-    count:StrictInt
-    data:Optional[str] = None
+# # body parameters it means to send json data from frontend
+# class DataStudent(BaseModel):
+#     username:str
+#     count:StrictInt
+#     data:Optional[str] = None
 
-# path , query , body demo all included in below
+
 # Question: how Api understand the it is path , query or body
 # Answer: Api understand [path] when it pass to the route url [/student/{id}/assigments/{assigment_id}] | query by its single 
 # type ex: [this_is_query:int] 
 # the type is single so it is consider as query | body when we use a Base Model of pydantic so api understand it is body ex: [data:DataStudent]
 
-@app.post("/student/{id}/assigments/{assigment_id}")  # path parameters
-def student_assigments(id,assigment_id:AssignmentId, thisisbody:DataStudent, this_is_query:int):
-    print("body: ",thisisbody)
-    print("query data", this_is_query)
-    if assigment_id is AssignmentId.three:
-        return {"message": f"std id: {id} This is the third assigment"}
-    if assigment_id is AssignmentId.two:
-        return {"message": f"std id: {id} This is the second assigment"}
-    if assigment_id is AssignmentId.one:
-        return {"message": f"std id: {id} This is the first assigment"}
+# @app.post("/student/{id}/assigments/{assigment_id}")  # path parameters
+# def student_assigments(id,assigment_id:AssignmentId, thisisbody:DataStudent, this_is_query:int):
+#     print("body: ",thisisbody)
+#     print("query data", this_is_query)
+#     if assigment_id is AssignmentId.three:
+#         return {"message": f"std id: {id} This is the third assigment"}
+#     if assigment_id is AssignmentId.two:
+#         return {"message": f"std id: {id} This is the second assigment"}
+#     if assigment_id is AssignmentId.one:
+#         return {"message": f"std id: {id} This is the first assigment"}
+
+# ====================================================================END======================================================================================
+
+#  we can also make an query parameter a body parameter
+# @app.post("/new")
+# def home(queryParm:Annotated[str, Body()]):
+#     print("Welcome to the Fast API",queryParm)
+#     return {"message": "Welcome to the Fast API"}
+
+
+
+# ==========================================================================================================================================================
+# emebed true means the body should be send with key item ex:
+# {
+#   "item": {
+#     "name": "string",
+#     "description": "string",
+#     "price": 0,
+#     "tax": 0
+#   }
+# }
+# class Item(BaseModel):
+#     name: str
+#     description: str | None = None
+#     price: float
+#     tax: float | None = None
+
+# @app.put("/items/{item_id}")
+# async def update_item(item_id: int, item: Annotated[Item, Body(embed=True)]):  
+#     results = {"item_id": item_id, "item": item}
+#     return results
+
+# ===============================================================================================================================================================
+
+
+# we can define max length and min length for query like below and also pattern ex: below pattern is to check if query is string else error
+
+# @app.get("/items/")
+# async def read_items(q: Annotated[str | None ,Query(max_length=10,min_length=4, pattern="^[a-zA-Z]+$")] = None):
+#     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+#     if q:
+#         results.update({"q": q})
+#     return results
+
+# =============================================================================================================================================================
+
+
+# union means two types either string or None 
+#  Query(alias="item-query") means change the name if the query to deffrent name using alias so you can send with that name from frontend
+
+# @app.get("/items/st")
+# async def read_items(q: Annotated[Union[str, None], Query(alias="item-query",title='this is a query q parameter', description='this is desciption')] = None):
+#     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+#     if q:
+#         results.update({"q": q})
+#     return results
+
+# =================================================================================================================================================================
+
+
+# we can sepecify the integer greater than (gt) and less than (le)
+
+# @app.get("/items/{item_id}")
+# async def read_items(
+#     item_id: Annotated[int, Path(gt=10, le=1000)],
+#     q: str,
+# ):
+#     results = {"item_id": item_id}
+#     if q:
+#         results.update({"q": q})
+#     return results
+
+# ===================================================================================================================================
+
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = Field(
+        default=None, title="The description of the item", max_length=300
+    )
+    price: float = Field(gt=0, description="The price must be greater than zero")
+    tax: float | None = None
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Annotated[Item, Body(embed=True)]):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
 
 def start():
     print("Starting the Uvicorn server...")
-    uvicorn.run("src.todos.main:app", host="127.0.0.1", port=8080,reload=True)
+    uvicorn.run("src.todos.main:app", host="127.0.0.1", port=8080,reload=False)
